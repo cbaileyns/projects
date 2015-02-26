@@ -3,13 +3,29 @@ class Craigslist():
     def __init__(self, url):
         '''Holds the url'''
         self.url = url
+        self.links = []
         self.last = None
+        self.getLinks()
+        self.getLast()
+        
     def getLinks(self):
-        '''Returns list of ad id's which will be passed to a new class'''
+        '''appends a list of links to be scraped to self.links'''
         req = requests.get(self.url)
         html = BeautifulSoup(req.text)
         urls = html.find_all('a', class_="hdrlnk")
-        return [urls[i]['href'].split("/")[3] for i in range(len(urls))]
+        for url in urls:
+            lnk = url['href'].split("/")[3]
+            if lnk == self.last:
+                break
+            else:
+                self.links.append(lnk)
+        'return [urls[i]['href'].split("/")[3] for i in range(len(urls))]
+    
+    def getLast(self):
+        '''determines the last link to append. the craigslist feed will update, therefore we do not want to create
+           double entries in the data'''
+        self.last = self.links[0]
+    
     def getData(self, newurl):
         link = self.url[:-1].split("/")
         link.pop(3)
@@ -44,6 +60,7 @@ class Craigslist():
         except IndexError:
             address = ""
         return link, price, bedrooms, sqft, lat, lon, address, text, initialpost
+    
     def scrapeData(self):
         linklist = self.getLinks()
         self.last = linklist[0]
