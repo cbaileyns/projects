@@ -21,6 +21,10 @@ class LinearRegression():
     def plot_residuals(self, variable):
         df = pd.DataFrame(dict(x = variable, y = self.residuals))
         return ggplot(df, aes(x="x", y="y")) + geom_point()
+    
+    def add_poly(self, variable, degree):
+        name = str(variable) + "_" + str(degree)
+        self.x[name] = self.x[variable]**degree
         
 
 df = toronto.frame[["price","sqft"]]
