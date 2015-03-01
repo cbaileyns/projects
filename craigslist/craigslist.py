@@ -2,30 +2,33 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
-
-add laundry, parking, etc.
+import numpy as np
+import time
 
 class Craigslist():
     '''Craigslist class accepts a url that parses the list of urls contained in the url which was initially passes'''
-    def __init__(self, url):
+    def __init__(self, url, last=None, frame=None):
         '''Holds the url'''
         self.url = url
         self.links = []
-        self.last = None
-        self.getLinks()
-        self.getLast()
+        self.last = last
+        self.frame = frame
         
     def getLinks(self):
         '''appends a list of links to be scraped to self.links'''
+        self.links = []
         req = requests.get(self.url)
         html = BeautifulSoup(req.text)
         urls = html.find_all('a', class_="hdrlnk")
         for url in urls:
             lnk = url['href'].split("/")[3]
+            print lnk
             if lnk == self.last:
                 break
             else:
                 self.links.append(lnk)
+        if len(self.links) > 0:
+            self.getLast()
         #return [urls[i]['href'].split("/")[3] for i in range(len(urls))]
     
     def getLast(self):
@@ -41,9 +44,14 @@ class Craigslist():
         return aprt.get()
     
     def scrape(self):
-        frame = pd.DataFrame([self.getData(self.links[i]) for i in range(20)])
-        frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url"]
-        return frame
+        self.getLinks()
+        if len(self.links) > 0:
+            df = pd.DataFrame([self.getData(self.links[i]) for i in range(len(self.links))])
+            df.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url"]
+            if np.size(self.frame) == 1:
+                self.frame = df
+            else:
+                self.frame.append(df)
         
 
 
@@ -63,27 +71,35 @@ class Listing():
         self.basement = self.isBasement()
         self.baths = self.baths()
         self.date = self.date()
-        self.size = self.sqft()
+        self.sqft = self.sqft()
 
     def title(self):
         #self.title = html.find_all("h2", class_="postingtitle")
         return self.html.find_all("h2", class_="postingtitle")
+
     def text(self):    
         #self.text = html.find(id="postingbody").text
-        return self.html.find(id="postingbody").text
+        try:
+            return self.html.find(id="postingbody").text
+        except:
+            return ""
     
     def mapattrs(self):            
         #self.mapattrs = html.find_all("div", class_="mapAndAttrs")
         return self.html.find_all("div", class_="mapAndAttrs")
         
     def price(self):
-        return re.search("\$\d+", str(self.title)).group()[1:]
+        try:
+            return re.search("\$\d+", str(self.title)).group()[1:]
+        except:
+            return ""
         
     def bed(self):
         try:
             return re.search("\d(br|BR)", str(self.title)).group()[0]
         except:
             return 1
+
     def sqft(self):
         try:
             return re.search("\d+(ft)", str(self.title)).group()[:-2]
@@ -122,6 +138,7 @@ class Listing():
                 return re.search("condo|apartment", str(self.text)).group()
             except:
                 return ""
+
     def isBasement(self):
         try:
             re.search("(b|B)asement", str(self.title)).group()
@@ -132,5 +149,10 @@ class Listing():
                 return 1
             except:
                 return 0
+
     def get(self):
-        return [self.price, self.size, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url]
+        return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url]
+        
+
+toronto = Craigslist("http://toronto.craigslist.ca/search/tor/apa?")
+toronto.scrape()
