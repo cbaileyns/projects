@@ -4,6 +4,7 @@ import re
 import pandas as pd
 import numpy as np
 import time
+from pandasql import *
 
 class Craigslist():
     '''Craigslist class accepts a url that parses the list of urls contained in the url which was initially passes'''
@@ -12,6 +13,7 @@ class Craigslist():
         self.url = url
         self.links = []
         self.last = last
+        self.data = []
         self.frame = frame
         
     def getLinks(self):
@@ -46,13 +48,10 @@ class Craigslist():
     def scrape(self):
         self.getLinks()
         if len(self.links) > 0:
-            df = pd.DataFrame([self.getData(self.links[i]) for i in range(len(self.links))])
-            df.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url"]
-            if np.size(self.frame) == 1:
-                self.frame = df
-            else:
-                self.frame.append(df)
-        
+            for i in range(len(self.links)):
+                self.data.append(self.getData(self.links[i]))
+        self.frame = pd.DataFrame(self.data)
+        self.frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url"]
 
 
 class Listing():
