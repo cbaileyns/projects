@@ -23,14 +23,7 @@ class LinearRegression():
         return ggplot(df, aes(x="x", y="y")) + geom_point()
     
     def add_poly(self, variable, degree):
-        name = str(variable) + "_" + str(degree)
-        self.x[name] = self.x[variable]**degree
-        
-
-df = toronto.frame[["price","sqft"]]
-df = df[df.price != "350000"]
-df = df[df.sqft != ""]
-
-apartments = LinearRegression(df.sqft, df.price)
-apartments.fit_model()
-apartments.plot_residuals(apartments.x.sqft)
+        degree = list(degree)
+        for p in degree:
+            name = str(variable) + "_" + str(p)
+            self.x[name] = self.x[variable]**p
