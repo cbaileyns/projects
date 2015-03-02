@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import time
 from pandasql import *
+from geopy.geocoders import Nominatim
 
 class Craigslist():
     '''Craigslist class accepts a url that parses the list of urls contained in the url which was initially passes'''
@@ -15,6 +16,7 @@ class Craigslist():
         self.last = last
         self.data = []
         self.frame = frame
+        self.count = 0
         
     def getLinks(self):
         '''appends a list of links to be scraped to self.links'''
@@ -49,9 +51,26 @@ class Craigslist():
         self.getLinks()
         if len(self.links) > 0:
             for i in range(len(self.links)):
-                self.data.append(self.getData(self.links[i]))
+                self.data.append(self.getData(self.links[i]))             
+    
+    def address(self):
+        for i in range(self.count, len(self.data)):
+            self.count += 1
+            try: 
+                geolocator = Nominatim()
+                location = geolocator.reverse((self.data[i][7],self.data[i][8])).address.split(",")
+                area = location[-5]
+                pcode = location[-2]
+                self.data[i].append(area)
+                self.data[i].append(pcode)
+            except:
+                self.data[i].append("")
+                self.data[i].append("")
+                
+    def frameit(self):
         self.frame = pd.DataFrame(self.data)
-        self.frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url"]
+        self.frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url","area","pcode"]
+        
 
 
 class Listing():
@@ -148,10 +167,6 @@ class Listing():
                 return 1
             except:
                 return 0
-
+                    
     def get(self):
         return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url]
-        
-
-toronto = Craigslist("http://toronto.craigslist.ca/search/tor/apa?")
-toronto.scrape()
