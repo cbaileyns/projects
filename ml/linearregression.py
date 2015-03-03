@@ -1,4 +1,5 @@
 import statsmodels.api as sm
+import sklearn.linear_model as lm
 import numpy as np
 from ggplot import *
 
@@ -27,3 +28,12 @@ class LinearRegression():
         for p in degree:
             name = str(variable) + "_" + str(p)
             self.x[name] = self.x[variable]**p
+
+class Linear():
+    def __init__(self, x, y, method="Matrix", intercept=True):
+        self.x = x.convert_objects(convert_numeric=True)
+        self.y = y.convert_objects(convert_numeric=True)
+    
+    def fit_model(self):
+        lin = lm.LinearRegression(fit_intercept=intercept)
+        
