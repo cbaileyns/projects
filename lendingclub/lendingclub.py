@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import logisticregression
 
 class LendingClub():
     
@@ -7,6 +8,7 @@ class LendingClub():
         self.data = pd.read_csv(filelocation,skiprows=1,encoding="utf-8")
         self.y = None
         self.x = None
+        self.clean_data()
     
     def clean_data(self):
         self.data = self.data.query('loan_status == "Fully Paid" or loan_status == "Charged Off"')
@@ -20,3 +22,9 @@ class LendingClub():
     
     def get_x(self, variables):
         self.x = self.data[variables]
+
+lc = LendingClub("loandata.csv")
+lc.get_x(["fico_range_high","open_acc","funded","unemployed","int_rate","revol_util"])
+
+l = Logistic(lc.x, lc.y)
+l.eval()
