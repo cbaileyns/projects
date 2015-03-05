@@ -11,9 +11,12 @@ class LendingClub():
     def clean_data(self):
         self.data = self.data.query('loan_status == "Fully Paid" or loan_status == "Charged Off"')
         self.data.loan_status = self.data.loan_status.map({"Fully Paid":0, "Charged Off":1})  
-        self.data.int_rate = self.data.int_rate.apply(lambda x: np.nan if x in ['-'] else np.float(x[:-1]))
-        self.data.revol_util = self.data.revol_util.apply(lambda x: np.nan if x in ['-'] else np.float(x[:-1]))
-        self.data["closed_acct"] = self.data.total_acct - self.data.open_acct
+        self.data.int_rate = self.data.int_rate.apply(lambda x: 0 if type(x) == float else np.float(x[:-1]))
+        self.data.revol_util = self.data.revol_util.apply(lambda x: 0 if type(x) == float else np.float(x[:-1]))
+        self.data["closed_acct"] = self.data.total_acc - self.data.open_acc
         self.data["funded"] = self.data.funded_amnt_inv / self.data.loan_amnt
         self.y = self.data.loan_status
         self.data["unemployed"] = self.data.emp_length == "n/a"
+    
+    def get_x(self, variables):
+        self.x = self.data[variables]
