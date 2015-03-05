@@ -2,6 +2,7 @@ import sklearn.linear_model as lm
 from sklearn import cross_validation
 import pandas as pd
 import numpy as np
+from sklearn.metrics import roc_curve
 
 class Logistic():
     
@@ -12,11 +13,14 @@ class Logistic():
         self.y_train = None
         self.split(x,y)
         self.yhat = None
+        self.params = None
+        self.fit()
 
     def fit(self):
         logit = lm.LogisticRegression()
         model = logit.fit(self.x_train, self.y_train)
         self.yhat = model.predict(self.x_test)        
+        self.params = logit.coef_
         
     def split(self,x,y):
         self.x_train, self.x_test, self.y_train, self.y_test = cross_validation.train_test_split(x, y, test_size=0.2)
@@ -31,4 +35,7 @@ class Logistic():
         print 'There are: ' + str(fp) + ' false positives'
         print 'There are: ' + str(fn) + ' false negatives'
         print 'There are: ' + str(tn) + ' true negatives'
-        
+        fpr, tpr, thresholds = roc_curve(self.y_test, self.yhat, pos_label = 2)
+        print tpr
+        print fpr
+        print thresholds
