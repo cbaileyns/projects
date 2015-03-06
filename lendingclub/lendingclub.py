@@ -22,9 +22,32 @@ class LendingClub():
     
     def get_x(self, variables):
         self.x = self.data[variables]
+        
+    def adjust_fico(self):
+        a = self.data.fico_range_high
+        a = a - min(a) + 1
+        a = (a / max(a))
+        self.data.fico_range_high = log(1/a)
+    
+    def adjust_desc(self):
+        self.data.desc = self.data.desc.apply(lambda x: 0 if type(x) == float else max(0,len(x) - 31))
+    
+    def adjust_dates(self):
+        self.data.earliest_cr_line = self.data.earliest_cr_line.apply(lambda x: datetime.datetime.strptime(x, "%b-%Y"))
+        self.data.issue_d = self.data.issue_d.apply(lambda x: datetime.datetime.strptime(x, "%b-%Y"))
+        self.data["age"] = self.data.issue_d - self.data.earliest_cr_line
+        self.data.age = self.data.age.convert_objects(convert_timedeltas=True)
+        self.data.age = self.data.age.apply(lambda x: np.timedelta64(x,"D").astype(float) / 365)
+        
+
+credit years... how many open lines in this time??
+
 
 lc = LendingClub("loandata.csv")
-lc.get_x(["fico_range_high","open_acc","funded","unemployed","int_rate","revol_util"])
+lc.adjust_fico()
+lc.adjust_desc()
+lc.adjust_dates()
+lc.get_x(["fico_range_high"])#,"open_acc","funded","unemployed","int_rate","revol_util"
 
 l = Logistic(lc.x, lc.y)
 l.eval()
