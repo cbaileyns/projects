@@ -1,5 +1,4 @@
 import statsmodels.api as sm
-import sklearn.linear_model as lm
 import numpy as np
 from ggplot import *
 
@@ -20,15 +19,27 @@ class LinearRegression():
         print rslt.summary()
     
     def plot_residuals(self, variable):
-        df = pd.DataFrame(dict(x = variable, y = self.residuals))
+        df = pd.DataFrame(dict(x = variable.values, y = self.residuals.values))
         return ggplot(df, aes(x="x", y="y")) + geom_point()
+    
+    def add_log(self, variable):
+        self.x["log_" + variable] = log(self.x[variable])
     
     def add_poly(self, variable, degree):
         degree = list(degree)
         for p in degree:
             name = str(variable) + "_" + str(p)
             self.x[name] = self.x[variable]**p
+        
 
+df = t.frame[["price","sqft"]]
+df = df[df.price != "350000"]
+df = df[df.sqft != ""]
+
+apartments = LinearRegression(df.sqft, df.price)
+apartments.fit_model()
+apartments.add_log("sqft")
+apartments.plot_residuals(apartments.x.sqft)
 class Linear():
     def __init__(self, x, y, method="Matrix", intercept=True):
         self.x = x.convert_objects(convert_numeric=True)
