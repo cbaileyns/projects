@@ -19,6 +19,7 @@ class Craigslist():
         self.data = []
         self.frame = frame
         self.count = 0
+        self.errors = []
     
     def getLinks(self):
         '''appends a list of links to be scraped to self.links'''
@@ -59,7 +60,10 @@ class Craigslist():
         self.getLinks()
         if len(self.links) > 0:
             for i in range(len(self.links)):
-                self.data.append(self.getData(self.links[i]))             
+                try:
+                    self.data.append(self.getData(self.links[i]))
+                except:
+                    self.errors.append(self.links[i])
     
     def address(self):
         for i in range(self.count, len(self.data)):
@@ -77,8 +81,8 @@ class Craigslist():
                 
     def frameit(self):
         self.frame = pd.DataFrame(self.data)
-        self.frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url","area","pcode"]
-        
+        self.frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url","den","posting","area","pcode"]
+      
 
 
 class Listing():
@@ -98,11 +102,16 @@ class Listing():
         self.baths = self.baths()
         self.date = self.date()
         self.sqft = self.sqft()
+        self.rbar = self.rbar()
+        self.den = self.with_den()
 
     def title(self):
         #self.title = html.find_all("h2", class_="postingtitle")
         return self.html.find_all("h2", class_="postingtitle")
 
+    def rbar(self):
+        return datetime.datetime.strptime(self.html.find_all("time")[0].text,"%Y-%m-%d %I:%M%p")
+    
     def text(self):    
         #self.text = html.find(id="postingbody").text
         try:
@@ -175,12 +184,19 @@ class Listing():
                 return 1
             except:
                 return 0
+    
+    def with_den(self):
+        try:
+            re.search("(d|D)en", str(self.text)).group()
+            return 1
+        except:
+            return 0
                     
     def get(self):
-        return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url]
+        return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url, self.den, self.rbar]
 
 
-t = Craigslist("http://toronto.craigslist.ca/search/tor/apa?s=&", last="4914246477.html")
+t = Craigslist("http://toronto.craigslist.ca/search/tor/apa?s=&", last="4919691139.html")
 t.scrape()
 t.address()
 t.frameit()
