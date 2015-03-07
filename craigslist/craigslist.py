@@ -6,6 +6,8 @@ import numpy as np
 import time
 from pandasql import *
 from geopy.geocoders import Nominatim
+import linearregression
+import logisticregression
 
 class Craigslist():
     '''Craigslist class accepts a url that parses the list of urls contained in the url which was initially passes'''
@@ -17,20 +19,25 @@ class Craigslist():
         self.data = []
         self.frame = frame
         self.count = 0
-        
+    
     def getLinks(self):
         '''appends a list of links to be scraped to self.links'''
+        found = False
+        itz = -1
         self.links = []
-        req = requests.get(self.url)
-        html = BeautifulSoup(req.text)
-        urls = html.find_all('a', class_="hdrlnk")
-        for url in urls:
-            lnk = url['href'].split("/")[3]
-            print lnk
-            if lnk == self.last:
-                break
-            else:
-                self.links.append(lnk)
+        while found == False:
+            itz += 1
+            req = requests.get(self.url[:-1] + str(itz*100) + self.url[-1:])
+            html = BeautifulSoup(req.text)
+            urls = html.find_all('a', class_="hdrlnk")
+            for url in urls:
+                lnk = url['href'].split("/")[3]
+                print lnk
+                if lnk == self.last:
+                    found = True
+                    break
+                else:
+                    self.links.append(lnk)
         if len(self.links) > 0:
             self.getLast()
         #return [urls[i]['href'].split("/")[3] for i in range(len(urls))]
@@ -43,6 +50,7 @@ class Craigslist():
     def getData(self, newurl):
         link = self.url[:-1].split("/")
         link.pop(3)
+        link[4] = link[4][:3]
         link = "/".join(link) + "/" + newurl
         aprt = Listing(link)
         return aprt.get()
@@ -170,3 +178,9 @@ class Listing():
                     
     def get(self):
         return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url]
+
+
+t = Craigslist("http://toronto.craigslist.ca/search/tor/apa?s=&", last="4914246477.html")
+t.scrape()
+t.address()
+t.frameit()
