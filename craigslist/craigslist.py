@@ -2,12 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
-import numpy as np
-import time
-from pandasql import *
 from geopy.geocoders import Nominatim
-import linearregression
-import logisticregression
+import datetime
 
 class Craigslist():
     '''Craigslist class accepts a url that parses the list of urls contained in the url which was initially passes'''
@@ -19,29 +15,32 @@ class Craigslist():
         self.data = []
         self.frame = frame
         self.count = 0
-        self.errors = []
+        self.listerrors = []
+        self.pagerrors = []
     
     def getLinks(self):
         '''appends a list of links to be scraped to self.links'''
         found = False
         itz = -1
         self.links = []
-        while found == False:
+        while found == False or itz < 21:
             itz += 1
-            req = requests.get(self.url[:-1] + str(itz*100) + self.url[-1:])
-            html = BeautifulSoup(req.text)
-            urls = html.find_all('a', class_="hdrlnk")
-            for url in urls:
-                lnk = url['href'].split("/")[3]
-                print lnk
-                if lnk == self.last:
-                    found = True
-                    break
-                else:
-                    self.links.append(lnk)
+            try:
+                req = requests.get(self.url[:-1] + str(itz*100) + self.url[-1:])
+                html = BeautifulSoup(req.text)
+                urls = html.find_all('a', class_="hdrlnk")
+                for url in urls:
+                    lnk = url['href'].split("/")[3]
+                    print lnk
+                    if lnk == self.last:
+                        found = True
+                        break
+                    else:
+                        self.links.append(lnk)
+            except:
+                self.pagerrors.append(self.url[:-1] + str(itz*100) + self.url[-1:])
         if len(self.links) > 0:
             self.getLast()
-        #return [urls[i]['href'].split("/")[3] for i in range(len(urls))]
     
     def getLast(self):
         '''determines the last link to append. the craigslist feed will update, therefore we do not want to create
@@ -63,7 +62,7 @@ class Craigslist():
                 try:
                     self.data.append(self.getData(self.links[i]))
                 except:
-                    self.errors.append(self.links[i])
+                    self.listerrors.append(self.links[i])
     
     def address(self):
         for i in range(self.count, len(self.data)):
@@ -81,7 +80,7 @@ class Craigslist():
                 
     def frameit(self):
         self.frame = pd.DataFrame(self.data)
-        self.frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url","den","posting","area","pcode"]
+        self.frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url","den","posting","area","pcode","text","title","mapattrs","laundry","AC"]
       
 
 
@@ -104,6 +103,8 @@ class Listing():
         self.sqft = self.sqft()
         self.rbar = self.rbar()
         self.den = self.with_den()
+        self.laundry = self.laundry()
+        self.ac = self.ac()
 
     def title(self):
         #self.title = html.find_all("h2", class_="postingtitle")
@@ -191,12 +192,43 @@ class Listing():
             return 1
         except:
             return 0
-                    
+    
+    def laundry(self):
+        try:
+            re.search("w/d", str(self.mapattrs)).group()
+            return "unit"
+        except:
+            try:
+                re.search("bldg", str(self.mapattrs)).group()
+                return "bldg"
+            except:
+                try:
+                    re.search("on site", str(self.mapattrs)).group()
+                    return "on site"
+                except:
+                    return "none"
+
+    def ac(self):
+        try: 
+            re.search("(A|a)/(C|c)", str(self.text)).group()
+            return 1
+        except:
+            try:
+                re.search("(C|c)entral ((A|a)|(H|h)eat)", str(self.text)).group()
+                return 1
+            except:
+                return 0
+                            
+                                                            
     def get(self):
-        return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url, self.den, self.rbar]
+        return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url, self.den, self.rbar, self.text, self.title, self.mapattrs, self.laundry, self.ac]
 
 
 t = Craigslist("http://toronto.craigslist.ca/search/tor/apa?s=&", last="4919691139.html")
 t.scrape()
 t.address()
 t.frameit()
+s = Craigslist("http://sfbay.craigslist.org/search/sfc/apa?s=&", last="4884333521.html")
+s.scrape()
+s.address()
+s.frameit()
