@@ -29,7 +29,6 @@ class LendingClub():
         self.y = self.data.loan_status
         self.data["unemployed"] = self.data.emp_length == "n/a"
         self.drop("funded_amnt")
-        self.drop("installment")
         self.drop("sub_grade")
         self.drop("emp_title")
         self.drop("pymnt_plan")
@@ -109,3 +108,21 @@ pd.DataFrame.to_csv(f,"purpose.csv")
 query = '''select a.grade, sum(a.loan_status) / count(a.grade), count(a.grade) from df a group by a.grade'''
 g = sqldf(query, locals())
 pd.DataFrame.to_csv(g, "grade.csv")
+
+a = pd.crosstab([lc.data.grade,lc.data.inq_last_6mths],lc.data.loan_status)
+a[2] = a[1]/(a[0]+a[1])
+#p(D) increases across most grades as inquiries increase
+
+a = pd.cut(lc.data.mths_since_last_record,10)
+b = pd.DataFrame({"bin":a,"result":lc.data.loan_status,"grade":lc.data.grade})
+c = pd.crosstab(b.bin,b.result)
+c[2] = c[1]/c[0]
+
+lc.data["mntly_inc"] = lc.data.annual_inc / 12
+lc.data.dti = lc.data.dti / 100
+lc.data["mntly_pay"] = lc.data.mntly_inc * lc.data.dti
+lc.data.mntly_pay += lc.data.installment
+lc.data["ndti"] = lc.data.mntly_pay / lc.data.mntly_inc
+lc.data["dti_incr"] = (lc.data.ndti - lc.data.dti)
+lc.data.dti_incr = lc.data.dti_incr.apply(lambda x: 0 if x == inf else x)
+lc.data["dtindti"] = lc.data.dti_incr/lc.data.ndti
