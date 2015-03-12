@@ -7,23 +7,26 @@ import datetime
 
 class Craigslist():
     '''Craigslist class accepts a url that parses the list of urls contained in the url which was initially passes'''
-    def __init__(self, url, last=None, frame=None):
+    def __init__(self, url, filename,mode, last=None, frame=None):
         '''Holds the url'''
+        self.file = filename
         self.url = url
         self.links = []
         self.last = last
-        self.data = []
-        self.frame = frame
+        self.data = None
+        self.frame = None
         self.count = 0
         self.listerrors = []
         self.pagerrors = []
+        self.frameit(mode)
+        self.data = []
     
     def getLinks(self):
         '''appends a list of links to be scraped to self.links'''
         found = False
         itz = -1
         self.links = []
-        while found == False or itz < 21:
+        while found == False and itz < 21:
             itz += 1
             try:
                 req = requests.get(self.url[:-1] + str(itz*100) + self.url[-1:])
@@ -78,10 +81,12 @@ class Craigslist():
                 self.data[i].append("")
                 self.data[i].append("")
                 
-    def frameit(self):
-        self.frame = pd.DataFrame(self.data)
-        self.frame.columns = ["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url","den","posting","area","pcode","text","title","mapattrs","laundry","AC"]
-      
+    def frameit(self,mode="a"):
+        self.frame = pd.DataFrame(self.data, columns=["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url","den","posting","text","title","mapattrs","laundry","AC","area","pcode",])
+        if mode=="a":
+            pd.DataFrame.to_csv(self.frame,self.file, header=False, mode=mode)
+        else:
+            pd.DataFrame.to_csv(self.frame,self.file, header=True, mode=mode)
 
 
 class Listing():
@@ -116,7 +121,7 @@ class Listing():
     def text(self):    
         #self.text = html.find(id="postingbody").text
         try:
-            return self.html.find(id="postingbody").text
+            return self.html.find(id="postingbody").text.encode('ascii','ignore')
         except:
             return ""
     
@@ -224,11 +229,11 @@ class Listing():
         return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url, self.den, self.rbar, self.text, self.title, self.mapattrs, self.laundry, self.ac]
 
 
-t = Craigslist("http://toronto.craigslist.ca/search/tor/apa?s=&", last="4919691139.html")
+t = Craigslist("http://toronto.craigslist.ca/search/tor/apa?s=&", "/Users/chrisbailey/Documents/toronto.csv","w",last="4927821321.html")
 t.scrape()
 t.address()
 t.frameit()
-s = Craigslist("http://sfbay.craigslist.org/search/sfc/apa?s=&", last="4884333521.html")
+s = Craigslist("http://sfbay.craigslist.org/search/sfc/apa?s=&", "/Users/chrisbailey/Documents/sf.csv","w",last="4927766227.html")
 s.scrape()
 s.address()
 s.frameit()
