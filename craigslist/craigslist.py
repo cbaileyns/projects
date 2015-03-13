@@ -7,7 +7,7 @@ import datetime
 
 class Craigslist():
     '''Craigslist class accepts a url that parses the list of urls contained in the url which was initially passes'''
-    def __init__(self, url, filename,mode, last=None, frame=None):
+    def __init__(self, url, filename, mode, last=None):
         '''Holds the url'''
         self.file = filename
         self.url = url
@@ -18,9 +18,10 @@ class Craigslist():
         self.count = 0
         self.listerrors = []
         self.pagerrors = []
-        self.frameit(mode)
         self.data = []
-    
+        self.initFrame()
+        self.initLast()
+        
     def getLinks(self):
         '''appends a list of links to be scraped to self.links'''
         found = False
@@ -44,6 +45,14 @@ class Craigslist():
                 self.pagerrors.append(self.url[:-1] + str(itz*100) + self.url[-1:])
         if len(self.links) > 0:
             self.getLast()
+    
+    def initFrame(self):
+        self.frame = pd.read_csv(self.file,index_col=False)
+        self.frame = self.frame.drop_duplicates("url",inplace=False)    
+    def initLast(self):
+        if self.last == None:
+            ix = self.frame[self.frame.posting == max(self.frame.posting)].index.tolist()[0]
+            self.last = self.frame[self.frame.posting == max(self.frame.posting)].loc[ix,"url"].split("/")[-1]
     
     def getLast(self):
         '''determines the last link to append. the craigslist feed will update, therefore we do not want to create
@@ -82,11 +91,14 @@ class Craigslist():
                 self.data[i].append("")
                 
     def frameit(self,mode="a"):
-        self.frame = pd.DataFrame(self.data, columns=["price", "sqft", "bed", "baths", "type", "basement", "date", "lat", "long", "url","den","posting","text","title","mapattrs","laundry","AC","area","pcode",])
-        if mode=="a":
-            pd.DataFrame.to_csv(self.frame,self.file, header=False, mode=mode)
+        if len(self.data) == 0:
+            pass
         else:
-            pd.DataFrame.to_csv(self.frame,self.file, header=True, mode=mode)
+            if mode=="a":
+                pd.DataFrame.to_csv(self.frame,self.file, header=False,index=False, mode=mode)
+            else:
+                pd.DataFrame.to_csv(self.frame,self.file, header=True, mode=mode)
+            self.data = []
 
 
 class Listing():
@@ -229,11 +241,11 @@ class Listing():
         return [self.price, self.sqft, self.bed, self.baths, self.type, self.basement, self.date, self.lat, self.long, self.url, self.den, self.rbar, self.text, self.title, self.mapattrs, self.laundry, self.ac]
 
 
-t = Craigslist("http://toronto.craigslist.ca/search/tor/apa?s=&", "/Users/chrisbailey/Documents/toronto.csv","w",last="4927821321.html")
+t = Craigslist("http://toronto.craigslist.ca/search/tor/apa?s=&", "/Users/chrisbailey/Documents/toronto.csv","a")
 t.scrape()
 t.address()
 t.frameit()
-s = Craigslist("http://sfbay.craigslist.org/search/sfc/apa?s=&", "/Users/chrisbailey/Documents/sf.csv","w",last="4927766227.html")
+s = Craigslist("http://sfbay.craigslist.org/search/sfc/apa?s=&", "/Users/chrisbailey/Documents/sf.csv","a")
 s.scrape()
 s.address()
 s.frameit()
