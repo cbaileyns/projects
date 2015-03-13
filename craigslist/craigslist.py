@@ -94,10 +94,12 @@ class Craigslist():
         if len(self.data) == 0:
             pass
         else:
+            cols = ['price', 'sqft', 'bed', 'baths', 'type', 'basement', 'date', 'lat', 'long', 'url', 'den', 'posting', 'text', 'title', 'mapattrs', 'laundry', 'AC', 'area', 'pcode']
+            self.frame = pd.DataFrame(self.data,columns=cols)
             if mode=="a":
-                pd.DataFrame.to_csv(self.frame,self.file, header=False,index=False, mode=mode)
+                pd.DataFrame.to_csv(self.frame,self.file, columns=cols,header=False,index=False, mode=mode)
             else:
-                pd.DataFrame.to_csv(self.frame,self.file, header=True, mode=mode)
+                pd.DataFrame.to_csv(self.frame,self.file, columns=cols,header=True, mode=mode)
             self.data = []
 
 
